@@ -1,13 +1,14 @@
 # Utiliser l'image officielle PHP avec Apache
 FROM php:8.2-apache
 
-# Installer les dépendances systèmes nécessaires pour Laravel et React
+# Installer les dépendances systèmes nécessaires pour Laravel, React et PostgreSQL
 RUN apt-get update && apt-get install -y \
     git \
     curl \
     libpng-dev \
     libonig-dev \
     libxml2-dev \
+    libpq-dev \
     zip \
     unzip \
     nodejs \
