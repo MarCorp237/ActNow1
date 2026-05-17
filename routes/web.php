@@ -4,7 +4,7 @@ use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\Admin\DashboardController;
 use App\Http\Controllers\Admin\CampagneController;
 use App\Http\Controllers\Admin\DonationController;
-use App\Http\Middleware\IsAdmin; // 👈 On importe notre nouveau Middleware ici
+use App\Http\Middleware\IsAdmin;
 use App\Models\Campagne;
 use Illuminate\Foundation\Application;
 use Illuminate\Support\Facades\Route;
@@ -12,12 +12,32 @@ use Inertia\Inertia;
 use App\Http\Controllers\CauseController;
 use Illuminate\Http\Request;
 use App\Http\Controllers\Admin\UserController;
+use Illuminate\Support\Facades\Artisan; // 👈 Importation nécessaire pour le "Cheat Code"
 
 /*
 |--------------------------------------------------------------------------
 | Web Routes
 |--------------------------------------------------------------------------
 */
+
+/**
+ * 🚀 ROUTE DE SECOURS (A supprimer après usage !)
+ * Permet de lancer les migrations sans accès au terminal (Shell) sur Render.
+ */
+Route::get('/migrate-db-setup', function () {
+    try {
+        // 'migrate:fresh' réinitialise tout.
+        // Si tu veux juste migrer sans effacer, utilise 'migrate'
+        Artisan::call('migrate:fresh', [
+            '--force' => true,
+            '--seed' => true // Optionnel : lance les seeders s'ils existent
+        ]);
+
+        return "✅ Succès : La base de données a été réinitialisée et migrée !";
+    } catch (\Exception $e) {
+        return "❌ Erreur : " . $e->getMessage();
+    }
+});
 
 // Route de la page d'accueil (Welcome)
 Route::get('/', function () {
@@ -69,7 +89,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
         ]);
     })->name('dashboard');
 
-    // 👈 LES ROUTES SONT SORTIES ICI, SOUS LE DASHBOARD !
+    // ROUTES CAUSES & DONS
     Route::get('/causes', [CauseController::class, 'index'])->name('causes.index');
     Route::get('/historique', [CauseController::class, 'historique'])->name('donations.history');
     Route::get('/causes/{campagne}', [CauseController::class, 'show'])->name('causes.show');
@@ -77,7 +97,6 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::post('/causes/{campagne}/comment', [CauseController::class, 'commenter'])->name('causes.commenter');
 
     // 🛡️ ZONE ADMINISTRATION
-    // On utilise la classe IsAdmin::class au lieu de la Closure qui causait l'erreur
     Route::prefix('admin')->name('admin.')->middleware(IsAdmin::class)->group(function () {
 
         // Dashboard Admin
@@ -86,22 +105,17 @@ Route::middleware(['auth', 'verified'])->group(function () {
         // Gestion des campagnes
         Route::resource('campagnes', CampagneController::class);
 
+        // Gestion des utilisateurs
         Route::resource('users', UserController::class);
 
         // Gestion des Dons
-        Route::get('/donations/validate', [DonationController::class, 'pending'])->name('donations.pending'); // 👈 NOUVELLE ROUTE
-        Route::get('/donations', [DonationController::class, 'index'])->name('donations.index');
-        Route::patch('/donations/{donation}/status', [DonationController::class, 'updateStatus'])->name('donations.status');
-
-        // Gestion des Dons
+        Route::get('/donations/validate', [DonationController::class, 'pending'])->name('donations.pending');
         Route::get('/donations', [DonationController::class, 'index'])->name('donations.index');
         Route::patch('/donations/{donation}/status', [DonationController::class, 'updateStatus'])->name('donations.status');
 
         // Suppression spécifique d'une image dans la galerie
         Route::delete('/campagnes/images/{id}', [CampagneController::class, 'destroyImage'])->name('campagnes.images.destroy');
-
     });
-
 });
 
 // Routes de profil
